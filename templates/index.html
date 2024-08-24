@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 id="agent-leaderboard" class="mb-4">Agent Leaderboard</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Name</th>
+            <th>Score</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for agent in agents %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ agent[0] }}</td>
+            <td>{{ agent[1] }}</td>
+            <td>
+                <a href="{{ url_for('edit', id=agent[0]) }}" class="btn btn-sm btn-primary">Edit</a>
+                <a href="{{ url_for('delete', id=agent[0]) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this agent?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<button id="runTournamentBtn" class="btn btn-primary">Run Tournament</button>
+<button id="updateResultsBtn" class="btn btn-secondary">Update Results</button>
+
+<div id="loadingContainer" style="display: none; text-align: center; margin-top: 20px;">
+    <img id="loadingGif" src="{{ url_for('static', filename=config['LOADING_GIF_PATH']) }}" alt="Loading...">
+</div>
+
+<div id="tournamentProgressModal" class="modal fade" tabindex="-1" aria-labelledby="tournamentProgressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tournamentProgressModalLabel">Tournament Progress</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tournamentSpinner" class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Tournament is running...</p>
+                </div>
+                <div id="tournamentResults" class="mt-3" style="display: none;">
+                    <h6>Tournament Results:</h6>
+                    <table class="table" id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Agent</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('runTournamentBtn').addEventListener('click', function() {
+        console.log('Run Tournament button clicked');
+        this.disabled = true;
+        document.getElementById('loadingContainer').style.display = 'block';
+        
+        fetch('/run_tournament')
+            .then(response => {
+                console.log('Received response from /run_tournament');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Parsed JSON data:', data);
+                if (data.status === 'started') {
+                    console.log('Tournament started');
+                    $('#tournamentProgressModal').modal('show');
+                    $('#tournamentSpinner').show();
+                    $('#tournamentResults').hide();
+                    checkTournamentStatus();
+                } else {
+                    console.log('Tournament already running');
+                    alert('Tournament is already running!');
+                    this.disabled = false;
+                    document.getElementById('loadingContainer').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error in run_tournament:', error);
+                this.disabled = false;
+                document.getElementById('loadingContainer').style.display = 'none';
+            });
+    });
+
+    function checkTournamentStatus() {
+        fetch('/tournament_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.running) {
+                    setTimeout(checkTournamentStatus, 1000);  // Check again in 1 second
+                } else {
+                    location.reload();  // Reload the page when the tournament is complete
+                }
+            })
+            .catch(error => {
+                console.error('Error checking tournament status:', error);
+                document.getElementById('runTournamentBtn').disabled = false;
+                document.getElementById('loadingContainer').style.display = 'none';
+            });
+    }
+
+    document.getElementById('updateResultsBtn').addEventListener('click', function() {
+        console.log('Update Results button clicked');
+        fetch('/tournament_status')
+            .then(response => {
+                console.log('Received response from /tournament_status');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Parsed JSON data:', data);
+                $('#tournamentProgressModal').modal('show');
+                $('#tournamentSpinner').hide();
+                $('#tournamentResults').show();
+                
+                const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+                resultsTable.innerHTML = '';
+                console.log('Cleared results table');
+                
+                if (data.results && Object.keys(data.results).length > 0) {
+                    console.log('Populating results table');
+                    for (const [agent, score] of Object.entries(data.results)) {
+                        console.log(`Adding row for ${agent}: ${score}`);
+                        const row = resultsTable.insertRow();
+                        const cellAgent = row.insertCell(0);
+                        const cellScore = row.insertCell(1);
+                        cellAgent.textContent = agent;
+                        cellScore.textContent = score;
+                    }
+                } else {
+                    console.log('No results available');
+                    const row = resultsTable.insertRow();
+                    const cell = row.insertCell(0);
+                    cell.colSpan = 2;
+                    cell.textContent = 'No results available';
+                }
+                console.log('Finished updating results table');
+            })
+            .catch(error => {
+                console.error('Error in update_results:', error);
+                alert('An error occurred while fetching the results. Please try again.');
+            });
+    });
+</script>
+
+{% endblock %}

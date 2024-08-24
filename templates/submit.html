@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Submit Agent</h1>
+<form method="POST">
+    <div class="mb-3">
+        <label for="name" class="form-label">Agent Name</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+        <label for="code" class="form-label">Agent Code</label>
+        <textarea class="form-control" id="code" name="code" rows="10" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+{% endblock %}
