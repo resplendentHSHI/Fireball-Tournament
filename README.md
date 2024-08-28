@@ -1,6 +1,6 @@
 # Agent Tournament
 
-This project implements a tournament system for AI agents that play a strategic game. Agents compete against each other in a round-robin tournament, with their performance recorded and displayed on a leaderboard.
+This project provides a tournament system for AI agents to play fireball. Agents compete against each other in a round-robin tournament, with their performance recorded and displayed on a leaderboard.
 
 ## Table of Contents
 - [Overview](#overview)
@@ -15,7 +15,7 @@ This project implements a tournament system for AI agents that play a strategic 
 
 ## Overview
 
-The Agent Tournament is a Flask-based web application that allows users to submit AI agents, run tournaments, and view results. Agents compete in a game where they must choose between different moves (shield, load, fireball, tsunami, mirror) in a strategic manner.
+The Agent Tournament is a Flask-based web application that allows users to submit AI agents, run tournaments, and view results. Agents compete in a tournament where they must use magical spells (shield, load, fireball, tsunami, mirror) to win as many games as possible.
 
 ## Project Structure
 
@@ -29,17 +29,8 @@ The Agent Tournament is a Flask-based web application that allows users to submi
 
 ## Setup
 
-1. Ensure you have Python 3.7+ installed.
-2. Install required packages:
-   ```
-   pip install flask flask_sqlalchemy
-   ```
-3. Initialize the database:
-   ```python
-   from app import app, db
-   with app.app_context():
-       db.create_all()
-   ```
+1. Python 3.10.9, though an recent python distribution should be okay
+2. Check requirements.txt for specific libraries
 
 ## Running the Application
 
@@ -47,7 +38,7 @@ The Agent Tournament is a Flask-based web application that allows users to submi
    ```
    python app.py
    ```
-2. Open a web browser and navigate to `http://localhost:5000`
+2. Open a web browser and navigate to `http://localhost:5000` or other specified location
 
 ## Creating an Agent
 
@@ -85,7 +76,6 @@ def play(opponent_last_move):
 - `fireball` requires 1 load to use
 - `tsunami` requires 2 loads to use
 - `mirror` can only be used once per match
-- Certain moves are effective against others (e.g., fireball beats load)
 
 ## Tournament System
 
