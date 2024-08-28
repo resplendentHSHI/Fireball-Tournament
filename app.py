@@ -13,7 +13,7 @@ import json
 app = Flask(__name__)
 
 # Configuration
-app.config['LOADING_GIF_PATH'] = 'cute-dancing.gif'
+app.config['LOADING_GIF'] = 'static/cute-dancing.gif'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///agents.db'
 app.config['SECRET_KEY'] = 'your_secret_key_here'  # Change this to a random secret key
 db = SQLAlchemy(app)
@@ -45,6 +45,7 @@ class Agent(db.Model):
     score = db.Column(db.Float, default=0)
 
 # Routes
+
 @app.route('/')
 def index():
     try:
@@ -53,6 +54,7 @@ def index():
         sorted_results = sorted(results.items(), key=lambda x: x[1], reverse=True)
         return render_template('index.html', agents=sorted_results)
     except FileNotFoundError:
+        app.logger.error("tournament_results.json not found. Initializing with empty results.")
         return render_template('index.html', agents=[])
 
 @app.route('/submit', methods=['GET', 'POST'])
@@ -156,12 +158,27 @@ def tournament_status():
     else:
         app.logger.warning(f"Output file not found: {OUTPUT_FILE}")
     
+    # Read progress from PROGRESS_FILE
+    progress = {}
+    if os.path.exists(PROGRESS_FILE):
+        with open(PROGRESS_FILE, 'r') as f:
+            progress = json.load(f)
+    
+    # Read full results from tournament_results.json
+    full_results = {}
+    if os.path.exists('tournament_results.json'):
+        with open('tournament_results.json', 'r') as f:
+            full_results = json.load(f)
+    
     response = {
         'running': tournament_running,
-        'results': results
+        'results': results,
+        'progress': progress,
+        'full_results': full_results
     }
     app.logger.info(f"Sending tournament status response: {response}")
     return jsonify(response)
+
 
 # Helper functions
 def save_agent_file(agent_name, code):
@@ -180,7 +197,7 @@ def parse_tournament_results(lines):
     parsing_results = False
     app.logger.info("--- Starting to parse tournament results ---")
     for line in lines:
-        app.logger.info(f"Reading line: {line.strip()}")
+        #app.logger.info(f"Reading line: {line.strip()}")
         if line.strip() == "Tournament Results:":
             parsing_results = True
             app.logger.info("Found 'Tournament Results:' line, starting to parse results")
@@ -215,16 +232,19 @@ def update_agent_scores(results):
     app.logger.info("Database update completed")
 
 def initialize_tournament_results():
-    results = {}
-    for filename in os.listdir('.'):
-        if filename.endswith('_agent.py'):
-            agent_name = filename[:-3]  # Remove '.py' from the end
-            results[agent_name] = 0
-    
-    with open('tournament_results.json', 'w') as f:
-        json.dump(results, f)
-    
-    app.logger.info(f"Initialized tournament_results.json with {len(results)} agents")
+    if not os.path.exists('tournament_results.json'):
+        results = {}
+        for filename in os.listdir('.'):
+            if filename.endswith('_agent.py'):
+                agent_name = filename[:-3]  # Remove '.py' from the end
+                results[agent_name] = 0
+        
+        with open('tournament_results.json', 'w') as f:
+            json.dump(results, f)
+        
+        app.logger.info(f"Initialized tournament_results.json with {len(results)} agents")
+    else:
+        app.logger.info("tournament_results.json already exists, skipping initialization")
 
 def run_tournament_script():
     global tournament_running
@@ -277,7 +297,7 @@ def run_tournament_script():
         with open('tournament_results.json', 'r') as f:
             existing_results = json.load(f)
 
-        # Update results, preserving agents with 0 scores
+        # Update results, preserving agents with existing scores
         for agent, score in existing_results.items():
             if agent not in new_results:
                 new_results[agent] = round(score, 2)

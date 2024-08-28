@@ -3,10 +3,31 @@ import os
 import sys
 import time
 import json
+import concurrent.futures
+import threading
 
 MOVES = ['shield', 'load', 'fireball', 'tsunami', 'mirror']
 OUTPUT_FILE = 'tournament_output.txt'
 PROGRESS_FILE = 'tournament_progress.json'
+
+# Thread-safe writing to output file
+output_lock = threading.Lock()
+def write_output(message):
+    with output_lock:
+        with open(OUTPUT_FILE, 'a') as f:
+            f.write(message + '\n')
+
+# Thread-safe progress update
+progress_lock = threading.Lock()
+def update_progress(current, total):
+    with progress_lock:
+        progress = {
+            'current': current,
+            'total': total,
+            'percentage': (current / total) * 100
+        }
+        with open(PROGRESS_FILE, 'w') as f:
+            json.dump(progress, f)
 
 class Match:
     def __init__(self, agent1, agent2):
@@ -73,7 +94,7 @@ class Match:
         if move2 == 'mirror':
             self.mirror2 = False
         winner = self.determine_winner(move1, move2)
-        
+
         return winner, move1, move2
 
     def run(self, rounds=100):
@@ -98,18 +119,14 @@ class Match:
 
         return score1, score2
 
-def write_output(message):
-    with open(OUTPUT_FILE, 'a') as f:
-        f.write(message + '\n')
-
-def update_progress(current, total):
-    progress = {
-        'current': current,
-        'total': total,
-        'percentage': (current / total) * 100
-    }
-    with open(PROGRESS_FILE, 'w') as f:
-        json.dump(progress, f)
+def run_match_series(agent_class1, agent_class2, num_matches=100):
+    total_score1, total_score2 = 0, 0
+    for _ in range(num_matches):
+        match = Match(agent_class1(), agent_class2())
+        score1, score2 = match.run()
+        total_score1 += score1
+        total_score2 += score2
+    return total_score1, total_score2
 
 def main():
     open(OUTPUT_FILE, 'w').close()
@@ -129,26 +146,34 @@ def main():
     write_output(f"Loaded {len(agent_classes)} agents.")
 
     agent_names = list(agent_classes.keys())
-    total_matches = len(agent_names) * (len(agent_names) - 1) * 100
+    total_matches = len(agent_names) * (len(agent_names) - 1)
     matches_played = 0
 
     write_output("\nStarting tournament...")
-    for i, agent_name1 in enumerate(agent_names):
-        for j, agent_name2 in enumerate(agent_names):
-            if i != j:
-                write_output(f"\nMatch: {agent_name1} vs {agent_name2}")
-                for k in range(100):
-                    match = Match(agent_classes[agent_name1](), agent_classes[agent_name2]())
-                    score1, score2 = match.run()
-                    scores[agent_name1] += score1
-                    scores[agent_name2] += score2
-                    matches_played += 1
-                    update_progress(matches_played, total_matches)
-                    write_output(f"Progress: {matches_played}/{total_matches} matches completed")
-                    time.sleep(0.01)  # Small delay to allow for smoother output
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        future_to_match = {}
+        for i, agent_name1 in enumerate(agent_names):
+            for j, agent_name2 in enumerate(agent_names):
+                if i != j:
+                    future = executor.submit(run_match_series, agent_classes[agent_name1], agent_classes[agent_name2])
+                    future_to_match[future] = (agent_name1, agent_name2)
+
+        for future in concurrent.futures.as_completed(future_to_match):
+            agent_name1, agent_name2 = future_to_match[future]
+            try:
+                score1, score2 = future.result()
+                scores[agent_name1] += score1
+                scores[agent_name2] += score2
+                matches_played += 1
+                update_progress(matches_played, total_matches)
+                write_output(f"Match completed: {agent_name1} vs {agent_name2}")
+                write_output(f"Progress: {matches_played}/{total_matches} matches completed")
+            except Exception as exc:
+                write_output(f'Match between {agent_name1} and {agent_name2} generated an exception: {exc}')
 
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    
+
     write_output("\nTournament Results:")
     for agent_name, score in sorted_scores:
         write_output(f"{agent_name}: {score} points")

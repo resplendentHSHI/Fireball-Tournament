@@ -2,6 +2,9 @@
 {% block content %}
 
 <h1 id="agent-leaderboard" class="mb-4">Agent Leaderboard</h1>
+<div class="text-center mb-4">
+    <img src="{{ url_for('static', filename='better_fight.gif') }}" alt="Tournament GIF" style="max-width: 300px;">
+</div>
 
 <table class="table">
     <thead>
@@ -28,10 +31,10 @@
 </table>
 
 <button id="runTournamentBtn" class="btn btn-primary">Run Tournament</button>
-<button id="updateResultsBtn" class="btn btn-secondary">Update Results</button>
 
 <div id="loadingContainer" style="display: none; text-align: center; margin-top: 20px;">
-    <img id="loadingGif" src="{{ url_for('static', filename=config['LOADING_GIF_PATH']) }}" alt="Loading...">
+    <img id="loadingGif" src="{{ url_for('static', filename='cute-dancing.gif') }}" alt="Loading..." style="max-width: 100px;">
+    <p id="progressText">Tournament progress: 0%</p>
 </div>
 
 <div id="tournamentProgressModal" class="modal fade" tabindex="-1" aria-labelledby="tournamentProgressModalLabel" aria-hidden="true">
@@ -67,20 +70,19 @@
 </div>
 
 <script>
+    let tournamentRunning = false;
+
     document.getElementById('runTournamentBtn').addEventListener('click', function() {
         console.log('Run Tournament button clicked');
         this.disabled = true;
         document.getElementById('loadingContainer').style.display = 'block';
         
         fetch('/run_tournament')
-            .then(response => {
-                console.log('Received response from /run_tournament');
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log('Parsed JSON data:', data);
                 if (data.status === 'started') {
                     console.log('Tournament started');
+                    tournamentRunning = true;
                     $('#tournamentProgressModal').modal('show');
                     $('#tournamentSpinner').show();
                     $('#tournamentResults').hide();
@@ -104,9 +106,20 @@
             .then(response => response.json())
             .then(data => {
                 if (data.running) {
+                    tournamentRunning = true;
+                    // Update progress
+                    if (data.progress && data.progress.percentage !== undefined) {
+                        document.getElementById('progressText').textContent = `Tournament progress: ${Math.round(data.progress.percentage)}%`;
+                    }
+                    document.getElementById('loadingContainer').style.display = 'block';
                     setTimeout(checkTournamentStatus, 1000);  // Check again in 1 second
-                } else {
-                    location.reload();  // Reload the page when the tournament is complete
+                } else if (tournamentRunning) {
+                    tournamentRunning = false;
+                    document.getElementById('loadingContainer').style.display = 'none';
+                    document.getElementById('runTournamentBtn').disabled = false;
+                    updateResults(data.results);
+                    alert('Tournament completed! The page will reload in 5 seconds.');
+                    setTimeout(() => location.reload(), 5000);  // Reload after 5 seconds
                 }
             })
             .catch(error => {
@@ -116,47 +129,31 @@
             });
     }
 
-    document.getElementById('updateResultsBtn').addEventListener('click', function() {
-        console.log('Update Results button clicked');
-        fetch('/tournament_status')
-            .then(response => {
-                console.log('Received response from /tournament_status');
-                return response.json();
-            })
-            .then(data => {
-                console.log('Parsed JSON data:', data);
-                $('#tournamentProgressModal').modal('show');
-                $('#tournamentSpinner').hide();
-                $('#tournamentResults').show();
-                
-                const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
-                resultsTable.innerHTML = '';
-                console.log('Cleared results table');
-                
-                if (data.results && Object.keys(data.results).length > 0) {
-                    console.log('Populating results table');
-                    for (const [agent, score] of Object.entries(data.results)) {
-                        console.log(`Adding row for ${agent}: ${score}`);
-                        const row = resultsTable.insertRow();
-                        const cellAgent = row.insertCell(0);
-                        const cellScore = row.insertCell(1);
-                        cellAgent.textContent = agent;
-                        cellScore.textContent = score;
-                    }
-                } else {
-                    console.log('No results available');
-                    const row = resultsTable.insertRow();
-                    const cell = row.insertCell(0);
-                    cell.colSpan = 2;
-                    cell.textContent = 'No results available';
-                }
-                console.log('Finished updating results table');
-            })
-            .catch(error => {
-                console.error('Error in update_results:', error);
-                alert('An error occurred while fetching the results. Please try again.');
-            });
-    });
+    function updateResults(results) {
+        const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+        resultsTable.innerHTML = '';
+        
+        if (results && Object.keys(results).length > 0) {
+            for (const [agent, score] of Object.entries(results)) {
+                const row = resultsTable.insertRow();
+                const cellAgent = row.insertCell(0);
+                const cellScore = row.insertCell(1);
+                cellAgent.textContent = agent;
+                cellScore.textContent = score;
+            }
+        } else {
+            const row = resultsTable.insertRow();
+            const cell = row.insertCell(0);
+            cell.colSpan = 2;
+            cell.textContent = 'No results available';
+        }
+
+        $('#tournamentSpinner').hide();
+        $('#tournamentResults').show();
+    }
+
+    // Check status on page load in case a tournament is already running
+    checkTournamentStatus();
 </script>
 
 {% endblock %}

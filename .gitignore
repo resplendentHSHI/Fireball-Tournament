@@ -1,0 +1,5 @@
+# Ignore sample agents folder
+/sample_agents/
+
+# Ignore all files ending with _agent.py
+*_agent.py
