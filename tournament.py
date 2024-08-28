@@ -69,7 +69,7 @@ class Match:
                 return 0
         if (move2 == 'fireball' or move2 == 'tsunami') and move1 in 'load':
             return 1
-        if (move1 == 'shield') and move2 =='tsunami':
+        if (move1 == 'shield') and move2 == 'tsunami':
             return 1
         return None  # Draw
 
@@ -81,6 +81,7 @@ class Match:
         move2 = self.validate_move(move2, self.loads2, self.mirror2)
         round_result = f"{self.agent1.__class__.__name__} vs {self.agent2.__class__.__name__}: {move1} vs {move2}"
         self.match_log.append(round_result)
+        write_output(round_result)
 
         if move1 == 'load':
             self.loads1 += 1
@@ -110,17 +111,23 @@ class Match:
             winner, move1, move2 = self.run_round(last_move1, last_move2)
             if winner == 0:
                 score1 += 1
-                self.match_log.append(f"{self.agent1.__class__.__name__} wins!")
+                result = f"{self.agent1.__class__.__name__} wins!"
+                self.match_log.append(result)
+                write_output(result)
                 break
             elif winner == 1:
                 score2 += 1
-                self.match_log.append(f"{self.agent2.__class__.__name__} wins!")
+                result = f"{self.agent2.__class__.__name__} wins!"
+                self.match_log.append(result)
+                write_output(result)
                 break
             last_move1, last_move2 = move1, move2
         else:
             score1 += 1.1
             score2 += 1.1
-            self.match_log.append("Draw!")
+            result = "Draw!"
+            self.match_log.append(result)
+            write_output(result)
 
         return score1, score2
 
@@ -189,7 +196,15 @@ def main():
                 write_output(f"Match completed: {agent_name1} vs {agent_name2}")
                 write_output(f"Progress: {matches_played}/{total_matches} matches completed")
             except Exception as exc:
-                write_output(f'Match between {agent_name1} and {agent_name2} generated an exception: {exc}')
+                import traceback
+                error_msg = f"""
+        Error in match between {agent_name1} and {agent_name2}:
+        Exception type: {type(exc).__name__}
+        Exception message: {str(exc)}
+        Traceback:
+        {traceback.format_exc()}
+        """
+                write_output(error_msg)
 
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
