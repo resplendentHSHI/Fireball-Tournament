@@ -9,6 +9,7 @@ import threading
 MOVES = ['shield', 'load', 'fireball', 'tsunami', 'mirror']
 OUTPUT_FILE = 'tournament_output.txt'
 PROGRESS_FILE = 'tournament_progress.json'
+MATCH_FOLDER = 'match_results'
 
 # Thread-safe writing to output file
 output_lock = threading.Lock()
@@ -37,6 +38,7 @@ class Match:
         self.loads2 = 0
         self.mirror1 = True
         self.mirror2 = True
+        self.match_log = []
 
     def validate_move(self, move, loads, mirrorStatus):
         if move == 'fireball' and loads < 1:
@@ -77,7 +79,8 @@ class Match:
 
         move1 = self.validate_move(move1, self.loads1, self.mirror1)
         move2 = self.validate_move(move2, self.loads2, self.mirror2)
-        write_output(f"{self.agent1.__class__.__name__} vs {self.agent2.__class__.__name__}: {move1} vs {move2}")
+        round_result = f"{self.agent1.__class__.__name__} vs {self.agent2.__class__.__name__}: {move1} vs {move2}"
+        self.match_log.append(round_result)
 
         if move1 == 'load':
             self.loads1 += 1
@@ -107,32 +110,46 @@ class Match:
             winner, move1, move2 = self.run_round(last_move1, last_move2)
             if winner == 0:
                 score1 += 1
-                write_output(f"{self.agent1.__class__.__name__} wins!")
+                self.match_log.append(f"{self.agent1.__class__.__name__} wins!")
                 break
             elif winner == 1:
                 score2 += 1
-                write_output(f"{self.agent2.__class__.__name__} wins!")
+                self.match_log.append(f"{self.agent2.__class__.__name__} wins!")
                 break
             last_move1, last_move2 = move1, move2
         else:
             score1 += 1.1
             score2 += 1.1
-            write_output("Draw!")
+            self.match_log.append("Draw!")
 
         return score1, score2
 
 def run_match_series(agent_class1, agent_class2, num_matches=100):
     total_score1, total_score2 = 0, 0
-    for _ in range(num_matches):
+    agent1_name = agent_class1.__module__
+    agent2_name = agent_class2.__module__
+    match_folder = os.path.join(MATCH_FOLDER, f"{agent1_name}_vs_{agent2_name}")
+    os.makedirs(match_folder, exist_ok=True)
+
+    for match_num in range(num_matches):
         match = Match(agent_class1(), agent_class2())
         score1, score2 = match.run()
         total_score1 += score1
         total_score2 += score2
+
+        # Save individual match result
+        match_file = os.path.join(match_folder, f"match_{match_num+1}.txt")
+        with open(match_file, 'w') as f:
+            f.write(f"{agent1_name} vs {agent2_name}\n")
+            f.write("\n".join(match.match_log))
+            f.write(f"\nFinal Score: {score1} - {score2}\n")
+
     return total_score1, total_score2
 
 def main():
     open(OUTPUT_FILE, 'w').close()
     open(PROGRESS_FILE, 'w').close()
+    os.makedirs(MATCH_FOLDER, exist_ok=True)
 
     agent_files = [f for f in os.listdir('.') if f.endswith('_agent.py')]
     agent_classes = {}
@@ -152,7 +169,7 @@ def main():
     matches_played = 0
 
     write_output("\nStarting tournament...")
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
         future_to_match = {}
         for i, agent_name1 in enumerate(agent_names):

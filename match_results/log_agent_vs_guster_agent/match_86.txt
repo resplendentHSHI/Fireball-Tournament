@@ -1,0 +1,21 @@
+log_agent vs guster_agent
+Agent vs Agent: load vs load
+Agent vs Agent: mirror vs load
+Agent vs Agent: shield vs fireball
+Agent vs Agent: fireball vs fireball
+Agent vs Agent: load vs load
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs fireball
+Agent vs Agent: fireball vs shield
+Agent vs Agent: load vs load
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs load
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs fireball
+Agent vs Agent: fireball vs shield
+Agent vs Agent: load vs fireball
+Agent wins!
+Final Score: 0 - 1

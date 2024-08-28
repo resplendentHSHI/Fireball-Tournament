@@ -1,0 +1,10 @@
+dj_agent vs guster_agent
+Agent vs Agent: load vs load
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs fireball
+Agent vs Agent: load vs load
+Agent vs Agent: shield vs load
+Agent vs Agent: mirror vs load
+Agent vs Agent: tsunami vs mirror
+Agent wins!
+Final Score: 0 - 1

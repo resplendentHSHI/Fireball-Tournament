@@ -1,0 +1,14 @@
+guster_agent vs qp_agent
+Agent vs Agent: load vs load
+Agent vs Agent: load vs shield
+Agent vs Agent: shield vs mirror
+Agent vs Agent: tsunami vs fireball
+Agent vs Agent: load vs load
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs shield
+Agent vs Agent: shield vs shield
+Agent vs Agent: load vs shield
+Agent vs Agent: shield vs fireball
+Agent vs Agent: tsunami vs shield
+Agent wins!
+Final Score: 1 - 0

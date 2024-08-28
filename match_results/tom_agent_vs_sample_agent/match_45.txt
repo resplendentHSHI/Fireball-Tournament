@@ -1,0 +1,9 @@
+tom_agent vs sample_agent
+Agent vs Agent: load vs load
+Agent vs Agent: shield vs load
+Agent vs Agent: fireball vs tsunami
+Agent vs Agent: load vs mirror
+Agent vs Agent: load vs load
+Agent vs Agent: tsunami vs load
+Agent wins!
+Final Score: 1 - 0

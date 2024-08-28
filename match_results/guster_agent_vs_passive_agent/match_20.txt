@@ -1,0 +1,9 @@
+guster_agent vs passive_agent
+Agent vs Agent: load vs load
+Agent vs Agent: shield vs load
+Agent vs Agent: load vs load
+Agent vs Agent: load vs load
+Agent vs Agent: load vs load
+Agent vs Agent: fireball vs load
+Agent wins!
+Final Score: 1 - 0

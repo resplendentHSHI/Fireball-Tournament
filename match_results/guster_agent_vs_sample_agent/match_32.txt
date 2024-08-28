@@ -1,0 +1,5 @@
+guster_agent vs sample_agent
+Agent vs Agent: load vs load
+Agent vs Agent: load vs fireball
+Agent wins!
+Final Score: 0 - 1
