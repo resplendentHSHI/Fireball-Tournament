@@ -67,7 +67,7 @@ class Match:
         if move1 == 'mirror':
             if move2 in ['fireball', 'tsunami']:
                 return 0
-        if (move2 == 'fireball' or move2 == 'tsunami') and move1 in 'load':
+        if (move2 == 'fireball' or move2 == 'tsunami') and move1 in ['load']:
             return 1
         if (move1 == 'shield') and move2 == 'tsunami':
             return 1
