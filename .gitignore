@@ -1,0 +1,12 @@
+# Ignore sample agents folder
+/sample_agents/
+/archive/
+/__pycache__/
+/logs/
+/instance/
+/sample_agents/
+/fireball_env/  
+/match_results/
+.DS_Store
+# Ignore all files ending with _agent.py
+*_agent.py
