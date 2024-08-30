@@ -100,4 +100,91 @@
     </div>
 </div>
 
+
+<script>
+    let tournamentRunning = false;
+
+    document.getElementById('runTournamentBtn').addEventListener('click', function() {
+        console.log('Run Tournament button clicked');
+        this.disabled = true;
+        document.getElementById('loadingContainer').style.display = 'block';
+        
+        fetch('/run_tournament')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    console.log('Tournament started');
+                    tournamentRunning = true;
+                    $('#tournamentProgressModal').modal('show');
+                    $('#tournamentSpinner').show();
+                    $('#tournamentResults').hide();
+                    checkTournamentStatus();
+                } else {
+                    console.log('Tournament already running');
+                    alert('Tournament is already running!');
+                    this.disabled = false;
+                    document.getElementById('loadingContainer').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error in run_tournament:', error);
+                this.disabled = false;
+                document.getElementById('loadingContainer').style.display = 'none';
+            });
+    });
+
+    function checkTournamentStatus() {
+        fetch('/tournament_status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.running) {
+                    tournamentRunning = true;
+                    // Update progress
+                    if (data.progress && data.progress.percentage !== undefined) {
+                        document.getElementById('progressText').textContent = `Tournament progress: ${Math.round(data.progress.percentage)}%`;
+                    }
+                    document.getElementById('loadingContainer').style.display = 'block';
+                    setTimeout(checkTournamentStatus, 1000);  // Check again in 1 second
+                } else if (tournamentRunning) {
+                    tournamentRunning = false;
+                    document.getElementById('loadingContainer').style.display = 'none';
+                    document.getElementById('runTournamentBtn').disabled = false;
+                    updateResults(data.results);
+                    alert('Tournament completed! The page will reload in 5 seconds.');
+                    setTimeout(() => location.reload(), 5000);  // Reload after 5 seconds
+                }
+            })
+            .catch(error => {
+                console.error('Error checking tournament status:', error);
+                document.getElementById('runTournamentBtn').disabled = false;
+                document.getElementById('loadingContainer').style.display = 'none';
+            });
+    }
+
+    function updateResults(results) {
+        const resultsTable = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+        resultsTable.innerHTML = '';
+        
+        if (results && Object.keys(results).length > 0) {
+            for (const [agent, score] of Object.entries(results)) {
+                const row = resultsTable.insertRow();
+                const cellAgent = row.insertCell(0);
+                const cellScore = row.insertCell(1);
+                cellAgent.textContent = agent;
+                cellScore.textContent = score;
+            }
+        } else {
+            const row = resultsTable.insertRow();
+            const cell = row.insertCell(0);
+            cell.colSpan = 2;
+            cell.textContent = 'No results available';
+        }
+
+        $('#tournamentSpinner').hide();
+        $('#tournamentResults').show();
+    }
+
+    // Check status on page load in case a tournament is already running
+    checkTournamentStatus();
+</script>
 {% endblock %}
