@@ -6,6 +6,9 @@
 /instance/
 /sample_agents/
 /fireball_env/  
-
+/match_results/
+tournament_output.txt
+tournament_results.json
+tournament_progress.json
 # Ignore all files ending with _agent.py
 *_agent.py
