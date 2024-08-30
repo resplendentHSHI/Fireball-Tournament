@@ -7,5 +7,6 @@
 /sample_agents/
 /fireball_env/  
 /match_results/
+.DS_Store
 # Ignore all files ending with _agent.py
 *_agent.py
