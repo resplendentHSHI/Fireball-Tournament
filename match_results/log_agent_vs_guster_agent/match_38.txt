@@ -1,6 +1,0 @@
-log_agent vs guster_agent
-Agent vs Agent: load vs load
-Agent vs Agent: mirror vs load
-Agent vs Agent: shield vs tsunami
-Agent wins!
-Final Score: 0 - 1

@@ -1,6 +1,0 @@
-guster_agent vs allusion_agent
-Agent vs Agent: load vs load
-Agent vs Agent: load vs load
-Agent vs Agent: fireball vs mirror
-Agent wins!
-Final Score: 0 - 1

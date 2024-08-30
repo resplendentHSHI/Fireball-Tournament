@@ -14,9 +14,9 @@ MATCH_FOLDER = 'match_results'
 # Thread-safe writing to output file
 output_lock = threading.Lock()
 def write_output(message):
-    with output_lock:
-        with open(OUTPUT_FILE, 'a') as f:
-            f.write(message + '\n')
+       with output_lock:
+           with open(OUTPUT_FILE, 'ab') as f:
+               f.write((message + '\n').encode('utf-8', errors='replace'))
 
 # Thread-safe progress update
 progress_lock = threading.Lock()
@@ -31,9 +31,10 @@ def update_progress(current, total):
             json.dump(progress, f)
 
 class Match:
-    def __init__(self, agent1, agent2):
+    def __init__(self, agent1, agent2, reset_between_games=True):
         self.agent1 = agent1
         self.agent2 = agent2
+        self.reset_between_games = reset_between_games
         self.loads1 = 0
         self.loads2 = 0
         self.mirror1 = True
@@ -129,17 +130,24 @@ class Match:
             self.match_log.append(result)
             write_output(result)
 
+        if self.reset_between_games:
+            self.agent1.__init__()
+            self.agent2.__init__()
+
         return score1, score2
 
-def run_match_series(agent_class1, agent_class2, num_matches=100):
+def run_match_series(agent_class1, agent_class2, num_matches=100, reset_between_games=True):
     total_score1, total_score2 = 0, 0
     agent1_name = agent_class1.__module__
     agent2_name = agent_class2.__module__
     match_folder = os.path.join(MATCH_FOLDER, f"{agent1_name}_vs_{agent2_name}")
     os.makedirs(match_folder, exist_ok=True)
 
+    agent1 = agent_class1()
+    agent2 = agent_class2()
+
     for match_num in range(num_matches):
-        match = Match(agent_class1(), agent_class2())
+        match = Match(agent1, agent2, reset_between_games)
         score1, score2 = match.run()
         total_score1 += score1
         total_score2 += score2
@@ -150,6 +158,10 @@ def run_match_series(agent_class1, agent_class2, num_matches=100):
             f.write(f"{agent1_name} vs {agent2_name}\n")
             f.write("\n".join(match.match_log))
             f.write(f"\nFinal Score: {score1} - {score2}\n")
+
+        if not reset_between_games:
+            agent1.__init__()
+            agent2.__init__()
 
     return total_score1, total_score2
 
@@ -182,7 +194,8 @@ def main():
         for i, agent_name1 in enumerate(agent_names):
             for j, agent_name2 in enumerate(agent_names):
                 if i != j:
-                    future = executor.submit(run_match_series, agent_classes[agent_name1], agent_classes[agent_name2])
+                    reset_between_games = getattr(agent_classes[agent_name1], 'reset_between_games', True) and getattr(agent_classes[agent_name2], 'reset_between_games', True)
+                    future = executor.submit(run_match_series, agent_classes[agent_name1], agent_classes[agent_name2], reset_between_games=reset_between_games)
                     future_to_match[future] = (agent_name1, agent_name2)
 
         for future in concurrent.futures.as_completed(future_to_match):
